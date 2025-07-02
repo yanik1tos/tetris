@@ -10,17 +10,34 @@
 
 using namespace std;
 
-int shape_index;
-const int height = 20, width = 20;
+int shape_index, shape_rotation = 0, new_shape_rotation = 0;
+const int height = 20, width = 20, shape_size = 4;
+const int start_x = width / 2 - (shape_size / 2), start_y = 0;
+int x = start_x, y = start_y;
 bool game, fall, goright, goleft, cangoright, cangoleft;
 time_t randseed = time(0);
-vector<pair<int, int>> new_shape;
-vector<vector<char>> field(height, vector<char>(width, ' '));
-const vector<vector<pair<int, int>>> shapes = {
-    {{1, width / 2}, {1, width / 2 - 1}, {0, width / 2}, {0, width / 2 - 1}},
-    {{1, width / 2}, {1, width / 2 + 1}, {0, width / 2 - 1}, {0, width / 2}},
-    {{3, width / 2}, {2, width / 2}, {1, width / 2}, {0, width / 2}},
-    {{1, width / 2}, {1, width / 2 - 1}, {0, width / 2 + 1}, {0, width / 2}}};
+vector<vector<int>> field(height, vector<int>(width, 0));
+const vector<vector<vector<vector<int>>>> shapes = {{
+	{{0, 0, 0, 0},
+	 {1, 1, 1, 1},
+	 {0, 0, 0, 0},
+	 {0, 0, 0, 0}},
+
+	{{0, 1, 0, 0},
+	 {0, 1, 0, 0},
+	 {0, 1, 0, 0},
+	 {0, 1, 0, 0}},
+
+	{{0, 0, 0, 0},
+	 {1, 1, 1, 1},
+	 {0, 0, 0, 0},
+	 {0, 0, 0, 0}},
+
+	{{0, 1, 0, 0},
+	 {0, 1, 0, 0},
+	 {0, 1, 0, 0},
+	 {0, 1, 0, 0}}
+}};
 
 
 
@@ -51,22 +68,31 @@ bool kbhit() {
 }
 
 
+void shape_init() {
+	shape_index    = rand() % shapes.size();
+	shape_rotation = 0;
+	x = start_x;
+	y = start_y;
+
+	for (int i = 0; i < shape_size; ++i) {
+		for (int j = 0; j < shape_size; ++j) {
+			field[x + i][y + j] &= shapes[shape_index][shape_rotation][i][j];
+		}
+	}
+	
+	fall = true;
+	cangoleft  = true;
+	cangoright = true;
+}
+
+
 void setup() {
     game = true;
     fall = false;
-    goleft = false;
-    cangoright = true;
-    cangoleft = true;
+	goright = false;
+    goleft  = false;
     srand(randseed);
-    shape_index = -1;
-
-    for (int i = 0; i < width; i++) {
-		field.back()[i] = '#';
-    }
-    for (int i = 0; i < height; i++) {
-		field[i][0] = '#';
-		field[i].back() = '#';
-    }
+	shape_init();
 }
 
 void input() {
@@ -91,6 +117,10 @@ void input() {
 					}
 					goleft = false;
 					break;
+				case 'q':
+					new_shape_rotation = shape_rotation - 1;
+				case 'e':
+					new_shape_rotation = shape_rotation + 1;
 				case 'x':
 					game = false;
 					break;
@@ -99,79 +129,115 @@ void input() {
 	}
 }
 
-void logic() {
-    if (fall) {
-		for (int i = 0; i < new_shape.size(); i++) {
-			field[new_shape[i].first][new_shape[i].second] = ' ';
-			new_shape[i].first++;
-			field[new_shape[i].first][new_shape[i].second] = '.';
 
-			if (field[new_shape[i].first + 1][new_shape[i].second] != ' ' && 
-				find(new_shape.begin(), new_shape.end(), make_pair(new_shape[i].first + 1, new_shape[i].second)) == new_shape.end()) {
-				fall = false;
+bool checkCollision(int dx, int dy) {
+	for (int i = 0; i < shape_size; ++i) {
+		for (int j = 0; j < shape_size; ++j) {
+			if (shapes[shape_index][shape_rotation][i][j] == 0) {
+				continue;
+			}
+
+			int nx = x + i + dx;
+			int ny = y + j + dy;
+
+			if (nx < 0 || nx >= width - 1 || 
+				ny < 0 || ny >= height - 1 || 
+				field[nx][ny] == 1) {
+
+				return true;
 			}
 		}
-		} else {
-			shape_index = rand() % shapes.size();
-			new_shape = shapes[shape_index];
-			for (auto p : new_shape) {
-				field[p.first][p.second] = '.';
+	}
+
+	return false;
+}
+
+
+void logic() {
+	if (!fall) {
+		shape_init();
+		return;
+	}
+
+	// clear the shape
+	for (int i = 0; i < shape_size; ++i) {
+		for (int j = 0; j < shape_size; ++j) {
+			if (shapes[shape_index][shape_rotation][i][j] == 0) {
+				continue;
 			}
-			fall = true;
-			cangoleft = true;
-			cangoright = true;
+			
+			field[x + i][y + j] = 0;
+		}
+	}
+
+	shape_rotation = new_shape_rotation;
+
+    if (fall) {
+		++y;
+
+		if (checkCollision(0, 1)) {
+			fall = false;
+		}	
 	}
 
 	if (goleft) {
-		for (int i = 0; i < new_shape.size(); i++) {
-			field[new_shape[i].first][new_shape[i].second] = ' ';
-			new_shape[i].second--;
-			field[new_shape[i].first][new_shape[i].second] = '.';
-
-			if (field[new_shape[i].first][new_shape[i].second - 1] != ' ' &&
-				find(new_shape.begin(), new_shape.end(), make_pair(new_shape[i].first, new_shape[i].second - 1)) == new_shape.end()) {
-				cangoleft = false;
-			}
-		}
+		--x;
 		goleft = false;
+
+		if (checkCollision(-1, 0)) {
+			cangoleft = false;
+		}
     }
 
     if (goright) {
-		for (int i = 0; i < new_shape.size(); i++) {
-			field[new_shape[i].first][new_shape[i].second] = ' ';
-			new_shape[i].second++;
-			field[new_shape[i].first][new_shape[i].second] = '.';
-
-			if (field[new_shape[i].first][new_shape[i].second + 1] != ' ' &&
-				find(new_shape.begin(), new_shape.end(), make_pair(new_shape[i].first, new_shape[i].second + 1)) == new_shape.end()) {
-				cangoright = false;
-			}
-		}
+		++x;
 		goright = false;
+
+		if (checkCollision(1, 0)) {
+			cangoright = false;
+		}
     }
+
+
+	// put the shape
+	for (int i = 0; i < shape_size; ++i) {
+		for (int j = 0; j < shape_size; ++j) {
+			if (shapes[shape_index][shape_rotation][i][j] == 0) {
+				continue;
+			}
+
+			field[x + i][y + j] = 1;
+		}
+	}
 }
 
 void draw() {
     char clear = system("clear");
 
-    for (auto i : field) {
-	for (auto j : i) {
-	    cout << j;
-	}
-	cout << "\n";
+    for (int i = 0; i < width; ++i) {
+		for (int j = 0; j < height; ++j) {
+			if (j == 0 || j == width - 1 || i == height - 1) {
+				cout << "##";
+			} else if (field[j][i] == 0) {
+				cout << "  ";
+			} else {
+				cout << "[]";
+			}
+		}
+		cout << "\n";
     }
 }
 
 int main() {
 	disableBuffering();
     setup();
+	cout << "\033[32m"; // green
 
     while (game) {
 		input();
 		logic();
 		draw();
 
-		cout << fall << " " << cangoleft << " " << cangoright << "\n";
 		this_thread::sleep_for(chrono::milliseconds(500));
     }
 
