@@ -13,7 +13,7 @@ using namespace std;
 int shape_index, shape_rotation = 0, new_shape_rotation = 0;
 const int height = 20, width = 15, shape_size = 4, screen_width = 230, screen_height = 64;
 const int start_x = width / 2 - (shape_size / 2), start_y = 0;
-const int delete_ticks = 3;
+const int delete_ticks = 4;
 int x = start_x, y = start_y, count_fall = 0;
 bool game, fall, godown, goright, goleft, cangoright, cangoleft;
 time_t randseed = time(0);
@@ -452,10 +452,12 @@ void draw() {
 				cout << "  ";
 			} else if (field[i][j] == 1) {
 				cout << "[]";
-			} else if (field[i][j] == 2) {
+			} else if (field[i][j] == 2 || field[i][j] == 3) {
 				cout << "**";
-			} else {
+			} else if (field[i][j] == 4) {
 				cout << "//";
+			} else {
+				cout << "00";
 			}
 		}
 		cout << "\n";
