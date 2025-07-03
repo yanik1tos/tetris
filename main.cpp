@@ -7,6 +7,8 @@
 #include <termios.h>
 #include <unistd.h>
 #include <sys/select.h>
+#include <fstream>
+#include <ctime>
 
 using namespace std;
 
@@ -15,7 +17,9 @@ const int height = 20, width = 15, shape_size = 4, screen_width = 230, screen_he
 const int start_x = width / 2 - (shape_size / 2), start_y = 0;
 const int delete_ticks = 4;
 int x = start_x, y = start_y, count_fall = 0;
-bool game, fall, godown, goright, goleft, cangoright, cangoleft;
+bool game, fall, godown, goright, goleft;
+float score = 0;
+const float score_padding1 = 0.2f, score_padding2 = 0.6f, score_padding3 = 0.75f, score_width = 15;
 time_t randseed = time(0);
 vector<vector<int>> field(height, vector<int>(width, 0));
 const vector<vector<vector<vector<int>>>> shapes = {
@@ -205,14 +209,18 @@ void shape_init() {
 
 	for (int i = 0; i < shape_size; ++i) {
 		for (int j = 0; j < shape_size; ++j) {
-			field[y + i][x + j] &= shapes[shape_index][shape_rotation][i][j];
+			int now = shapes[shape_index][shape_rotation][i][j];
+			if (field[y + i][x + j] == 1 && now == 1) {
+				field[y + i][x + j] = 2;
+				game = false;
+			}
+
+			field[y + i][x + j] |= now;
 		}
 	}
 	
 	fall   = true;
 	godown = false;
-	cangoleft  = true;
-	cangoright = true;
 }
 
 
@@ -247,15 +255,11 @@ void input() {
 			bool brk = false;
 			switch (c) {
 				case 'a':
-					if (cangoleft) {
-						goleft = true;
-					}
+					goleft = true;
 					goright = false;
 					break;
 				case 'd':
-					if (cangoright) {
-						goright = true;
-					}
+					goright = true;
 					goleft = false;
 					break;
 				case 's':
@@ -308,8 +312,8 @@ bool checkCollision(int dx, int dy) {
 
 void logic() {
 	if (!fall) {
+		score += 1;
 		shape_init();
-		return;
 	}
 
 	// clear the shape
@@ -343,7 +347,7 @@ void logic() {
 	++count_fall;
 	if (count_fall == 5 && fall) {
 		count_fall = 0;
-
+		score += 0.1f;
 		++y;
 
 		if (checkCollision(0, 1)) {
@@ -356,6 +360,7 @@ void logic() {
 	if (godown) {
 		while (!checkCollision(0, 1)) {
 			++y;
+			score += 0.3f;
 		}
 
 		fall = false;
@@ -363,21 +368,19 @@ void logic() {
 
 	// left
 	if (goleft) {
-		--x;
 		goleft = false;
 
-		if (checkCollision(-1, 0)) {
-			cangoleft = false;
+		if (!checkCollision(-1, 0)) {
+			--x;
 		}
     }
 
 	// right
     if (goright) {
-		++x;
 		goright = false;
 
-		if (checkCollision(1, 0)) {
-			cangoright = false;
+		if (!checkCollision(1, 0)) {
+			++x;
 		}
 	}
 
@@ -415,6 +418,7 @@ void logic() {
 			for (int j = 1; j < width - 1; ++j) {
 				field[i][j] = 2;
 			}
+			score += 50;
 		}
 		yes = 0;
 	}
@@ -446,7 +450,9 @@ void draw() {
     for (int i = 0; i < height; ++i) {
 		cout << spaces;
 		for (int j = 0; j < width; ++j) {
-			if (j == 0 || j == width - 1 || i == height - 1) {
+			if (j == width - 1) {
+				cout << "#&";
+			} else if (j == 0 || i == height - 1) {
 				cout << "##";
 			} else if (field[i][j] == 0) {
 				cout << "  ";
@@ -460,6 +466,30 @@ void draw() {
 				cout << "00";
 			}
 		}
+
+		
+		// score
+		if ((i == 0) || (i == height - 1) || (i == int(height * score_padding2))) {
+			for (int _ = 0; _ < score_width - 2; ++_) {
+				cout << '&';
+			}
+		// } else if (i < int(height * score_padding2) && i == int((height * score_padding2 - 2) / 2)) {
+		// 	string before_nshape((score_width - 2 - shape_size) / 2, ' ');
+
+		} else if (i == int(height * score_padding3)) {
+			int score_len = to_string(int(score)).size();
+			string before_score((score_width - 2 - score_len) / 2, ' ');
+			cout << before_score << int(score);
+			for (int _ = 0; _ < score_width - 2 - before_score.size() - score_len; ++_) {
+				cout << ' ';
+			}
+		} else {
+			for (int _ = 0; _ < score_width - 2; ++_) {
+				cout << ' ';
+			}
+		}
+
+		cout << '&';
 		cout << "\n";
     }
 
@@ -484,6 +514,20 @@ int main() {
 
 		this_thread::sleep_for(chrono::milliseconds(100));
     }
+
+	cout << "GAME OVER!\n";
+
+	ofstream records("records.txt");
+	time_t now = std::time(nullptr);
+	tm* localTime = std::localtime(&now);
+
+	if (records.is_open()) {
+		records << score << " " << (1900 + localTime->tm_year) << '-' << (1 + localTime->tm_mon) << '-' << localTime->tm_mday << '\n';
+		records.close();
+	} else {
+		cout << "Couldn't add the score\n";
+	}
+
 
 	enableBuffering();
     return 0;
