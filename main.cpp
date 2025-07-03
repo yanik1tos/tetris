@@ -11,13 +11,20 @@
 using namespace std;
 
 int shape_index, shape_rotation = 0, new_shape_rotation = 0;
-const int height = 20, width = 20, shape_size = 4;
-const int start_x = width / 2 - (shape_size / 2), start_y = -1;
+const int height = 20, width = 15, shape_size = 4, screen_width = 230, screen_height = 64;
+const int start_x = width / 2 - (shape_size / 2), start_y = 0;
+const int delete_ticks = 3;
 int x = start_x, y = start_y, count_fall = 0;
 bool game, fall, godown, goright, goleft, cangoright, cangoleft;
 time_t randseed = time(0);
-vector<vector<int>> field(width, vector<int>(height, 0));
-const vector<vector<vector<vector<int>>>> shapes = {{
+vector<vector<int>> field(height, vector<int>(width, 0));
+const vector<vector<vector<vector<int>>>> shapes = {
+{
+	{{0, 1, 0, 0},
+	 {0, 1, 0, 0},
+	 {0, 1, 0, 0},
+	 {0, 1, 0, 0}},
+
 	{{0, 0, 0, 0},
 	 {1, 1, 1, 1},
 	 {0, 0, 0, 0},
@@ -32,63 +39,53 @@ const vector<vector<vector<vector<int>>>> shapes = {{
 	 {1, 1, 1, 1},
 	 {0, 0, 0, 0},
 	 {0, 0, 0, 0}},
-
-	{{0, 1, 0, 0},
-	 {0, 1, 0, 0},
-	 {0, 1, 0, 0},
-	 {0, 1, 0, 0}}
 },
 {
-	{{1, 0, 0, 0},
-	 {1, 1, 0, 0},
-	 {0, 1, 0, 0},
-	 {0, 0, 0, 0}},
-
-	{{0, 0, 0, 0},
-	 {0, 1, 1, 0},
-	 {1, 1, 0, 0},
-	 {0, 0, 0, 0}},
-
-	{{0, 1, 0, 0},
-	 {0, 1, 1, 0},
-	 {0, 0, 1, 0},
-	 {0, 0, 0, 0}},
-
 	{{0, 1, 1, 0},
 	 {1, 1, 0, 0},
 	 {0, 0, 0, 0},
+	 {0, 0, 0, 0}},
+
+	{{0, 1, 0, 0},
+	 {0, 1, 1, 0},
+	 {0, 0, 1, 0},
+	 {0, 0, 0, 0}},
+
+	{{0, 0, 0, 0},
+	 {0, 1, 1, 0},
+	 {1, 1, 0, 0},
+	 {0, 0, 0, 0}},
+
+	{{1, 0, 0, 0},
+	 {1, 1, 0, 0},
+	 {0, 1, 0, 0},
 	 {0, 0, 0, 0}}
 },
 {
-	{{0, 0, 0, 0},
-	 {1, 1, 0, 0},
-	 {1, 1, 0, 0},
+	{{0, 1, 1, 0},
+	 {0, 1, 1, 0},
+	 {0, 0, 0, 0},
 	 {0, 0, 0, 0}},
 
-	{{0, 0, 0, 0},
-	 {1, 1, 0, 0},
-	 {1, 1, 0, 0},
+	{{0, 1, 1, 0},
+	 {0, 1, 1, 0},
+	 {0, 0, 0, 0},
 	 {0, 0, 0, 0}},
 
-	{{0, 0, 0, 0},
-	 {1, 1, 0, 0},
-	 {1, 1, 0, 0},
+	{{0, 1, 1, 0},
+	 {0, 1, 1, 0},
+	 {0, 0, 0, 0},
 	 {0, 0, 0, 0}},
 
-	{{0, 0, 0, 0},
-	 {1, 1, 0, 0},
-	 {1, 1, 0, 0},
+	{{0, 1, 1, 0},
+	 {0, 1, 1, 0},
+	 {0, 0, 0, 0},
 	 {0, 0, 0, 0}}
 },
 {
 	{{0, 1, 0, 0},
-	 {1, 1, 0, 0},
-	 {0, 1, 0, 0},
-	 {0, 0, 0, 0}},
-
-	{{0, 0, 0, 0},
 	 {1, 1, 1, 0},
-	 {0, 1, 0, 0},
+	 {0, 0, 0, 0},
 	 {0, 0, 0, 0}},
 
 	{{0, 1, 0, 0},
@@ -96,30 +93,77 @@ const vector<vector<vector<vector<int>>>> shapes = {{
 	 {0, 1, 0, 0},
 	 {0, 0, 0, 0}},
 
+	{{0, 0, 0, 0},
+	 {1, 1, 1, 0},
+	 {0, 1, 0, 0},
+	 {0, 0, 0, 0}},
+
 	{{0, 1, 0, 0},
+	 {1, 1, 0, 0},
+	 {0, 1, 0, 0},
+	 {0, 0, 0, 0}}
+},
+{
+	{{1, 1, 0, 0},
+	 {0, 1, 1, 0},
+	 {0, 0, 0, 0},
+	 {0, 0, 0, 0}},
+
+	{{0, 0, 1, 0},
+	 {0, 1, 1, 0},
+	 {0, 1, 0, 0},
+	 {0, 0, 0, 0}},
+
+	{{0, 0, 0, 0},
+	 {1, 1, 0, 0},
+	 {0, 1, 1, 0},
+	 {0, 0, 0, 0}},
+
+	{{0, 1, 0, 0},
+	 {1, 1, 0, 0},
+	 {1, 0, 0, 0},
+	 {0, 0, 0, 0}}
+},
+{
+	{{0, 1, 0, 0},
+	 {0, 1, 0, 0},
+	 {0, 1, 1, 0},
+	 {0, 0, 0, 0}},
+
+	{{0, 0, 0, 0},
+	 {1, 1, 1, 0},
+	 {1, 0, 0, 0},
+	 {0, 0, 0, 0}},
+
+	{{1, 1, 0, 0},
+	 {0, 1, 0, 0},
+	 {0, 1, 0, 0},
+	 {0, 0, 0, 0}},
+
+	{{0, 0, 1, 0},
 	 {1, 1, 1, 0},
 	 {0, 0, 0, 0},
 	 {0, 0, 0, 0}}
 },
 {
-	{{0, 0, 0, 0},
-	 {0, 1, 0, 0},
-	 {1, 1, 0, 0},
-	 {1, 0, 0, 0}},
-
-	{{0, 0, 0, 0},
-	 {0, 0, 0, 0},
-	 {1, 1, 0, 0},
-	 {0, 1, 1, 0}},
-
-	{{0, 0, 0, 0},
+	{{0, 0, 1, 0},
 	 {0, 0, 1, 0},
 	 {0, 1, 1, 0},
-	 {0, 1, 0, 0}},
+	 {0, 0, 0, 0}},
+
+	{{0, 1, 0, 0},
+	 {0, 1, 1, 1},
+	 {0, 0, 0, 0},
+	 {0, 0, 0, 0}},
+
+	{{0, 0, 1, 1},
+	 {0, 0, 1, 0},
+	 {0, 0, 1, 0},
+	 {0, 0, 0, 0}},
 
 	{{0, 0, 0, 0},
-	 {1, 1, 0, 0},
-	 {0, 1, 1, 0},
+	 {0, 1, 1, 1},
+	 {0, 0, 0, 1},
 	 {0, 0, 0, 0}}
 }};
 
@@ -161,7 +205,7 @@ void shape_init() {
 
 	for (int i = 0; i < shape_size; ++i) {
 		for (int j = 0; j < shape_size; ++j) {
-			field[x + i][y + j] &= shapes[shape_index][shape_rotation][i][j];
+			field[y + i][x + j] &= shapes[shape_index][shape_rotation][i][j];
 		}
 	}
 	
@@ -180,6 +224,16 @@ void setup() {
     goleft  = false;
     srand(randseed);
 	shape_init();
+
+
+	for (int j = 0; j < width; ++j) {
+		field[height - 1][j] = 1;
+	}
+
+	for (int i = 0; i < height; ++i) {
+		field[i][0] = 1;
+		field[i].back() = 1;
+	}
 }
 
 void input() {
@@ -235,12 +289,12 @@ bool checkCollision(int dx, int dy) {
 				continue;
 			}
 
-			int nx = x + i + dx;
-			int ny = y + j + dy;
+			int ny = y + i + dy;
+			int nx = x + j + dx;
 
-			if (nx < 0 || nx >= width  - 1 || 
-				ny < 0 || ny >= height - 1 || 
-				field[nx][ny] == 1) {
+			if (nx <= 0 || nx >= width  - 1 || 
+				ny <= 0 || ny >= height - 1 || 
+				field[ny][nx] == 1) {
 
 				return true;
 			}
@@ -265,12 +319,27 @@ void logic() {
 				continue;
 			}
 			
-			field[x + i][y + j] = 0;
+			field[y + i][x + j] = 0;
 		}
 	}
 
-	shape_rotation = new_shape_rotation;
 
+	// rotate
+	bool can = true;
+	for (int i = 0; i < shape_size; ++i) {
+		for (int j = 0; j < shape_size; ++j) {
+			if (shapes[shape_index][new_shape_rotation][i][j] == 1 && field[y + i][x + j] == 1) {
+				can = false;
+			}
+		}
+	}
+	if (can) {
+		shape_rotation = new_shape_rotation;
+	}
+	new_shape_rotation = shape_rotation;
+
+
+	// fall
 	++count_fall;
 	if (count_fall == 5 && fall) {
 		count_fall = 0;
@@ -282,6 +351,8 @@ void logic() {
 		}
 	}
 
+
+	// down
 	if (godown) {
 		while (!checkCollision(0, 1)) {
 			++y;
@@ -290,6 +361,7 @@ void logic() {
 		fall = false;
 	}
 
+	// left
 	if (goleft) {
 		--x;
 		goleft = false;
@@ -299,6 +371,7 @@ void logic() {
 		}
     }
 
+	// right
     if (goright) {
 		++x;
 		goright = false;
@@ -309,28 +382,40 @@ void logic() {
 	}
 
 
-	for (int i = 0; i < height; ++i) {
-		for (int j = 0; j < width; ++j) {
-			if (field[i][j] == 2) {
-				field[i][j] = 0;
+	// delete rows
+	for (int j = 1; j < width - 1; ++j) {
+		for (int i = 0; i < height - 1; ++i) {
+			if (field[i][j] == delete_ticks) {
+				for (int k = i - 1; k > -1; k--) {
+					field[k + 1][j] = field[k][j];
+				}
 			}
 		}
 	}
 
-	for (int i = 0; i < height; ++i) {
+
+	for (int j = 1; j < width - 1; ++j) {
+		for (int i = 0; i < height - 1; ++i) {
+			if (field[i][j] >= 2) {
+				++field[i][j];
+			}
+		}
+	}
+	
+
+	for (int i = 0; i < height - 1; ++i) {
 		int yes = 0;
-		for (int j = 0; j < width; ++j) {
+		for (int j = 1; j < width - 1; ++j) {
 			if (field[i][j] == 1) {
 				++yes;
 			}
 		}
 
-		if (yes == width) {
-			for (int j = 0; j < width; ++j) {
+		if (yes == width - 2) {
+			for (int j = 1; j < width - 1; ++j) {
 				field[i][j] = 2;
 			}
 		}
-		cout << yes << "\n";
 		yes = 0;
 	}
 
@@ -342,7 +427,7 @@ void logic() {
 				continue;
 			}
 
-			field[x + i][y + j] = 1;
+			field[y + i][x + j] = 1;
 		}
 	}
 }
@@ -351,15 +436,23 @@ void logic() {
 void draw() {
     char clear = system("clear");
 
-    for (int i = 0; i < width; ++i) {
-		for (int j = 0; j < height; ++j) {
-			if (j == 0 || j == height - 1 || i == width - 1) {
+	// center vertically
+	for (int _ = 0; _ < (screen_height - height) / 2; ++_) {
+		cout << "\n";
+	}
+
+	string spaces((screen_width - width) / 2, ' ');
+
+    for (int i = 0; i < height; ++i) {
+		cout << spaces;
+		for (int j = 0; j < width; ++j) {
+			if (j == 0 || j == width - 1 || i == height - 1) {
 				cout << "##";
-			} else if (field[j][i] == 0) {
+			} else if (field[i][j] == 0) {
 				cout << "  ";
-			} else if (field[j][i] == 1) {
+			} else if (field[i][j] == 1) {
 				cout << "[]";
-			} else if (field[j][i] == 2) {
+			} else if (field[i][j] == 2) {
 				cout << "**";
 			} else {
 				cout << "//";
@@ -367,6 +460,14 @@ void draw() {
 		}
 		cout << "\n";
     }
+
+
+	// for (int i = 0; i < height; ++i) {
+	// 	for (int j = 0; j < width; ++j) {
+	// 		cout << field[i][j];
+	// 	}
+	// 	cout << "\n";
+    // }
 }
 
 int main() {
