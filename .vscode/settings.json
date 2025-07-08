@@ -3,6 +3,7 @@
         "chrono": "cpp",
         "span": "cpp",
         "iostream": "cpp",
-        "fstream": "cpp"
+        "fstream": "cpp",
+        "format": "cpp"
     }
 }

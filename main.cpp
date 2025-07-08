@@ -9,12 +9,15 @@
 #include <sys/select.h>
 #include <fstream>
 #include <ctime>
+#include <sstream>
+#include <map>
 
 using namespace std;
 
+map<string, int> config;
 int shape_index, shape_rotation = 0, new_shape_rotation = 0;
-const int height = 20, width = 15, shape_size = 4, screen_width = 230, screen_height = 64;
-const int start_x = width / 2 - (shape_size / 2), start_y = 0;
+const int height = 20, width = 15, shape_size = 4;
+int screen_width, screen_height, start_x, start_y;
 const int delete_ticks = 4;
 int x = start_x, y = start_y, count_fall = 0;
 bool game, fall, godown, goright, goleft;
@@ -224,7 +227,29 @@ void shape_init() {
 }
 
 
+void get_config() {
+	ifstream file("config.txt");
+	string line;
+
+	while (getline(file, line)) {
+		istringstream iss(line);
+		string key;
+		int value;
+
+		if (getline(iss, key, '=') && iss >> value) {
+			config[key] = value;
+		}
+	}
+
+	screen_width  = config["width"];
+	screen_height = config["height"];
+}
+
+
 void setup() {
+	get_config();
+	start_x = width / 2 - (shape_size / 2);
+
     game = true;
     fall    = false;
 	godown  = false;
@@ -517,7 +542,7 @@ int main() {
 
 	cout << "GAME OVER!\n";
 
-	ofstream records("records.txt");
+	ofstream records("records.txt", ios::app);
 	time_t now = std::time(nullptr);
 	tm* localTime = std::localtime(&now);
 
