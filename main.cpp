@@ -228,7 +228,7 @@ void shape_init() {
 
 
 void get_config() {
-	ifstream file("config.txt");
+	ifstream file("/home/yanikitos/program/tetris/config.txt");
 	string line;
 
 	while (getline(file, line)) {
@@ -462,6 +462,20 @@ void logic() {
 }
 
 
+void record() {
+	ofstream records("/home/yanikitos/program/tetris/records.txt", ios::app);
+	time_t now = std::time(nullptr);
+	tm* localTime = std::localtime(&now);
+
+	if (records.is_open()) {
+		records << score << " " << (1900 + localTime->tm_year) << '-' << (1 + localTime->tm_mon) << '-' << localTime->tm_mday << '\n';
+		records.close();
+	} else {
+		cout << "Couldn't add the score\n";
+	}
+}
+
+
 void draw() {
     char clear = system("clear");
 
@@ -542,15 +556,9 @@ int main() {
 
 	cout << "GAME OVER!\n";
 
-	ofstream records("records.txt", ios::app);
-	time_t now = std::time(nullptr);
-	tm* localTime = std::localtime(&now);
-
-	if (records.is_open()) {
-		records << score << " " << (1900 + localTime->tm_year) << '-' << (1 + localTime->tm_mon) << '-' << localTime->tm_mday << '\n';
-		records.close();
-	} else {
-		cout << "Couldn't add the score\n";
+	
+	if (score > 50) {
+		record();
 	}
 
 

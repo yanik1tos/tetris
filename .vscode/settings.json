@@ -4,6 +4,7 @@
         "span": "cpp",
         "iostream": "cpp",
         "fstream": "cpp",
-        "format": "cpp"
+        "format": "cpp",
+        "iosfwd": "cpp"
     }
 }
